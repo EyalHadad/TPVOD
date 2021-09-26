@@ -282,8 +282,46 @@ def dataset_statistics_plot(id=0):
 #         create_train_dataset_in_steps(Path(f), step_size, random_state)
 #
 
+def my_split_random(n):
+    test_size = 0.2
+    csv_dir = Path("Features/CSV")
+    process_list = []
 
+    for i in range (n):
+        train_test_dir = csv_dir / f"random_train_test{i}"
+        train_test_dir.mkdir(exist_ok=True)
+
+        for f in csv_dir.glob("*duplex_positive_feature*.csv"):
+            ###########################################3
+            # Create train_test
+            ###########################################3
+            p = Process(target=random_train_test_split_worker, args=(f, train_test_dir, test_size, i*7))
+            p.start()
+            process_list.append(p)
+    for p in process_list:
+        p.join()
+
+
+def my_split(n):
+    test_size = 0.2
+    csv_dir = Path("Features/CSV")
+    process_list = []
+
+    for i in range (n):
+        train_test_dir = csv_dir / f"train_test{i}"
+        train_test_dir.mkdir(exist_ok=True)
+
+        for f in csv_dir.glob("*duplex_positive_feature*.csv"):
+            ###########################################3
+            # Create train_test
+            ###########################################3
+            p = Process(target=stratify_train_test_split_worker, args=(f, train_test_dir, test_size, i*19))
+            p.start()
+            process_list.append(p)
+    for p in process_list:
+        p.join()
 
 
 if __name__ == "__main__":
-    cli()
+    my_split(1)
+    # cli()

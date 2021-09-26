@@ -1,7 +1,9 @@
 from functools import partial
 from pathlib import Path
 from typing import Dict
+import os
 
+print(os.getcwd())
 import click
 import numpy as np
 import pandas as pd
@@ -10,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.model_selection import PredefinedSplit
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import RandomizedSearchCV,GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from multiprocessing import Process, Pool
 import sklearn
 
@@ -22,22 +24,20 @@ from FeatureReader import get_reader, reader_dict
 from ClfLogger import logger
 
 
-
-
-class ClassifierWithGridSearch (object):
+class ClassifierWithGridSearch(object):
     def __init__(self, dataset_file, result_dir):
         self.dataset_file = dataset_file
         self.dataset_name = self.extract_dataset_name()
-        print (f"Handling dataset : {self.dataset_name}")
+        print(f"Handling dataset : {self.dataset_name}")
         self.load_dataset()
         self.result_dir = Path(result_dir)
         self.result_dir.mkdir(exist_ok=True, parents=True)
         self.create_clf_dict()
 
-    def extract_dataset_name (self):
+    def extract_dataset_name(self):
         return str(self.dataset_file.stem).split("_test")[0]
 
-    def create_clf_dict (self):
+    def create_clf_dict(self):
         self.clf_dict = {
             'rf': RandomForestClassifier(),
             'SVM': SVC(),
@@ -45,7 +45,7 @@ class ClassifierWithGridSearch (object):
             'SGD': SGDClassifier(),
             "KNeighborsClassifier": KNeighborsClassifier(),
             "xgbs": XGBClassifier(),
-            "xgbs_no_encoding" : XGBClassifier(),
+            "xgbs_no_encoding": XGBClassifier(),
         }
 
     # def load_dataset(self, use_test_as_val: bool = False):
@@ -92,15 +92,14 @@ class ClassifierWithGridSearch (object):
         self.X = X
         self.y = y
 
-
-    def train_one_conf (self, clf_name, conf, scoring="accuracy"):
+    def train_one_conf(self, clf_name, conf, scoring="accuracy"):
         output_file = self.result_dir / f"{self.dataset_name}_{clf_name}.csv"
         if output_file.is_file():
-            print (f"output file: {output_file} exits. skip.")
+            print(f"output file: {output_file} exits. skip.")
             return
 
         clf = self.clf_dict[clf_name]
-        print (clf)
+        print(clf)
         parameters = conf['parameters']
 
         grid_obj = GridSearchCV(clf, parameters, scoring=scoring, cv=4, n_jobs=-1, verbose=3)
@@ -109,7 +108,7 @@ class ClassifierWithGridSearch (object):
         print('\n Best estimator:')
         print(grid_obj.best_estimator_)
         print(grid_obj.best_score_ * 2 - 1)
-        #save the best classifier
+        # save the best classifier
         best_clf = grid_obj.best_estimator_
         model_file = self.result_dir / f"{self.dataset_name}_{clf_name}.model"
 
@@ -119,24 +118,22 @@ class ClassifierWithGridSearch (object):
         except Exception:
             pass
 
-
         results = pd.DataFrame(grid_obj.cv_results_)
         results.to_csv(output_file, index=False)
 
-    def fit_best_clf (self, clf_name, parameters: Dict):
+    def fit_best_clf(self, clf_name, parameters: Dict):
         clf = self.clf_dict[clf_name]
-        print (clf)
+        print(clf)
         fit_params = {}
-        if clf_name=="xgbs":
+        if clf_name == "xgbs":
             fit_params = {"eval_set": [(self.X_val, self.y_val)],
                           "early_stopping_rounds": 50}
 
         clf.fit(self.X, self.y, **fit_params)
 
-
         return clf
 
-    def fit (self, yaml_path):
+    def fit(self, yaml_path):
         with open(yaml_path, 'r') as stream:
             training_config = yaml.safe_load(stream)
 
@@ -145,16 +142,16 @@ class ClassifierWithGridSearch (object):
                 self.train_one_conf(clf_name, conf, scoring="accuracy")
 
 
-def worker (dataset_file, results_dir, yaml_file):
+def worker(dataset_file, results_dir, yaml_file):
     clf_grid_search = ClassifierWithGridSearch(dataset_file=dataset_file, result_dir=results_dir)
     clf_grid_search.fit(yaml_file)
     return
 
 
-
 @click.group()
 def cli():
     pass
+
 
 @click.command()
 @click.option('--feature_mode',
@@ -162,7 +159,7 @@ def cli():
 @click.argument('yaml_file')
 @click.argument('first_self', type=int)
 @click.argument('last_self', type=int)
-def self_fit(feature_mode, yaml_file, first_self, last_self):
+def tmp_fit(feature_mode, yaml_file, first_self, last_self):
     logger.info("starting self_fit")
     logger.info(f"params: {[feature_mode, yaml_file, first_self, last_self]}")
 
@@ -178,7 +175,6 @@ def self_fit(feature_mode, yaml_file, first_self, last_self):
             worker(dataset_file, results_dir=results_dir, yaml_file=yaml_file)
             logger.info(f"finish dataset = {dataset_file}")
     logger.info("finish self_fit")
-
 
 
 @click.command()
@@ -203,13 +199,13 @@ def self_fit_random(feature_mode, yaml_file, first_self, last_self):
             logger.info(f"finish dataset = {dataset_file}")
         logger.info("finish self_fit_random")
 
-
         #     p = Process(target=worker, args=(dataset_file, results_dir, yaml_file))
         # #     p.start()
         #
         #     process_list.append(p)
         # for p in process_list:
         #     p.join()
+
 
 @click.command()
 @click.argument('yaml_file')
@@ -225,13 +221,49 @@ def different_fit(yaml_file, first_self, last_self):
             worker(dataset_file, results_dir, yaml_file, True)
 
 
-cli.add_command(self_fit)
+cli.add_command(tmp_fit)
 cli.add_command(different_fit)
 cli.add_command(self_fit_random)
 
 
+def my_self_fit_scaffold(feature_mode, yaml_file, first_self, last_self):
+    logger.info("starting self_fit")
+    logger.info(f"params: {[feature_mode, yaml_file, first_self, last_self]}")
 
+    FeatureReader.reader_selection_parameter = feature_mode
+    csv_dir = Path("Features/CSV")
+    for i in range(first_self, last_self):
+        train_test_dir = csv_dir / f"train_test{i}"
+        results_dir = Path("Results") / f"self{i}"
+        logger.info(f"train_test_dir = {train_test_dir}")
+        logger.info(f"results_dir = {results_dir}")
+        for dataset_file in train_test_dir.glob("*_test*"):
+            logger.info(f"start dataset = {dataset_file}")
+            worker(dataset_file, results_dir=results_dir, yaml_file=yaml_file)
+            logger.info(f"finish dataset = {dataset_file}")
+    logger.info("finish self_fit")
+
+def my_self_fit_random(feature_mode, yaml_file, first_self, last_self):
+    logger.info("starting self_fit_random")
+    logger.info(f"params: {[feature_mode, yaml_file, first_self, last_self]}")
+
+    FeatureReader.reader_selection_parameter = feature_mode
+
+    csv_dir = Path("Features/CSV")
+    for i in range(first_self, last_self):
+        train_test_dir = csv_dir / f"random_train_test{i}"
+        results_dir = Path("Results") / f"random_self{i}"
+        for dataset_file in train_test_dir.glob("*_test*"):
+            logger.info(f"start dataset = {dataset_file}")
+            worker(dataset_file, results_dir=results_dir, yaml_file=yaml_file)
+            logger.info(f"finish dataset = {dataset_file}")
+        logger.info("finish self_fit_random")
 
 
 if __name__ == '__main__':
-    cli()
+    # cli()
+    # my_self_fit_random('all', 'xgbs_params_one.yml',0,2)
+    my_self_fit_scaffold('all', 'xgbs_params_one.yml',0,1)
+    # my_self_fit_scaffold('hot_encoding', 'xgbs_params_one.yml',0,1)
+    # my_self_fit_scaffold('without_hot_encoding', 'xgbs_params_one.yml',0,1)
+

@@ -117,6 +117,7 @@ def get_presaved_clf(results_dir: Path, dataset: str, method: str):
         clf = pickle.load(f)
     return clf
 
+
 def self_results_summary(id: int, prefix=""):
     ms_table = None
     results_dir = Path("Results") / f"{prefix}self{id}"

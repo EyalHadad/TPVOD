@@ -14,43 +14,41 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from collections import ChainMap
-from TPVOD_Utils import utils
+# from TPVOD_Utils import utils
 from multiprocessing import Process
 
 from dataset import Dataset
 
-XGBS_PARAMS = {
-            "objective": ["binary:hinge"],
-            "booster" : ["gbtree"],
-            "eta" : [0.1, 0.02, 0.3, 0.7],
-            'gamma': [0.5, 1, 1.5, 2, 5],
-            'max_depth': range(2, 10, 2),
-            'min_child_weight': [1, 5, 10],
-            'subsample': [0.6, 0.8, 1.0],
-            'colsample_bytree': [0.6, 0.8, 1.0],
-            "lambda" : [1,2],
-            "n_jobs": [-1],
-            "verbose": [0],
-    "verbose_eval ": [False]
-
-}
-#
-#
 # XGBS_PARAMS = {
 #             "objective": ["binary:hinge"],
 #             "booster" : ["gbtree"],
-#             "eta" : [0.1],
-#             'gamma': [0.5],
-#             'max_depth': range(2, 4, 2),
-#             'min_child_weight': [1],
-#             'subsample': [0.6],
-#             'colsample_bytree': [0.6],
-#             "lambda" : [1],
+#             "eta" : [0.1, 0.02, 0.3, 0.7],
+#             'gamma': [0.5, 1, 1.5, 2, 5],
+#             'max_depth': range(2, 10, 2),
+#             'min_child_weight': [1, 5, 10],
+#             'subsample': [0.6, 0.8, 1.0],
+#             'colsample_bytree': [0.6, 0.8, 1.0],
+#             "lambda" : [1,2],
 #             "n_jobs": [-1],
+#             "verbose": [0],
+#     "verbose_eval ": [False]
 #
-#         }
+# }
 #
+#
+XGBS_PARAMS = {
+            "objective": ["binary:hinge"],
+            "booster" : ["gbtree"],
+            "eta" : [0.1],
+            'gamma': [0.5],
+            'max_depth': range(2, 4, 2),
+            'min_child_weight': [1],
+            'subsample': [0.6],
+            'colsample_bytree': [0.6],
+            "lambda" : [1],
+            "n_jobs": [-1],
 
+        }
 
 
 def train_self(scoring='accuracy'):
@@ -110,7 +108,6 @@ def train_self(scoring='accuracy'):
             # results = pd.DataFrame(grid_obj.cv_results_)
             # results.to_csv(output_file, index=False)
             #
-
 
 
 def results_summary():
@@ -228,9 +225,9 @@ def train_size(scoring='accuracy'):
 
 
 def main():
-    # train_self()
+    train_self()
     train_size()
-    # results_summary()
+    results_summary()
 
 
 
